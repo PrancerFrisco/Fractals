@@ -34,14 +34,15 @@ int juliaIterationCheck(double realZ, double imagZ, double realC, double imagC, 
 
 
 
-std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long int zoom, double realC, double imagC, double xOffset, double yOffset, int minY, int maxY, int height, int minX, int maxX, int width, std::function<sf::Color(int, int)> paletteFunction) {
+std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long int zoom, double realC, double imagC, double xCoord, double yCoord, int minY, int maxY, int minX, int maxX, std::function<sf::Color(int, int)> paletteFunction) {
     int iterations;
     std::vector<sf::Uint8> pixels;
     pixels.resize((maxX - minX) * (maxY - minY) * 4);
+    double zoomInverse = 1.0 / zoom;
     int index = 0;
     for (int y = maxY - 1; y >= minY; y--) {
         for (int x = minX; x < maxX; x++) {
-            iterations = juliaIterationCheck((x + xOffset) / zoom, (y + yOffset) / zoom, realC, imagC, maxIterations);
+            iterations = juliaIterationCheck(xCoord + x * zoomInverse, yCoord + y * zoomInverse, realC, imagC, maxIterations);
             sf::Color colour = paletteFunction(iterations, maxIterations);
 
             sf::Uint8* pixelPtr = &pixels[index];
@@ -63,8 +64,6 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
     int maxY = -minY;
     int newMinY = minY;
     int newMaxY = maxY;
-    double xOffset = xCoord * zoom;
-    double yOffset = yCoord * zoom;
 
     int chunkSize = height / threadNum;
     std::vector<std::vector<sf::Uint8>> arrays;
@@ -76,7 +75,7 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
             int startRow = minY + i * (maxY - minY) / threadNum;
             int endRow = minY + (i + 1) * (maxY - minY) / threadNum;
 
-            std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xOffset, yOffset, startRow, endRow, height, minX, maxX, width, paletteFunction);
+            std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, startRow, endRow, minX, maxX, paletteFunction);
 
             std::lock_guard<std::mutex> guard(mutex);
             arrays[threadNum - i - 1] = std::move(tempArray);
@@ -92,7 +91,7 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
     }
     // ERROR TERM
     if (chunkSize * threadNum != height) {
-        std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xOffset, yOffset, minY + chunkSize * threadNum, maxY, height, minX, maxX, width, paletteFunction);
+        std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, minY + chunkSize * threadNum, maxY, minX, maxX, paletteFunction);
         pixels.insert(pixels.end(), tempArray.begin(), tempArray.end());
     }
     sf::Image image;
@@ -151,6 +150,7 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
 
                     mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
                     mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
+
                     xCoord = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
                     yCoord = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
                     texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
@@ -162,6 +162,8 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
             }
         } if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
+            mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
             realC = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
             imagC = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
             texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
@@ -209,7 +211,7 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
             sprite.setTexture(texture);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], mandelbrotIterationCheck));
             sprite.setTexture(texture);
         }  if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
             texture.copyToImage().saveToFile("julia.png");
