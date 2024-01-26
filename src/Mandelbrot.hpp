@@ -8,7 +8,10 @@
 #include <immintrin.h>
 
 
-
+struct formula {
+    std::function<int(double, double, int)> func;
+    std::string name;
+};
 
 
 
@@ -31,7 +34,114 @@ int mandelbrotIterationCheck(double real, double imag, int maxIterations) {
     return iterations;
 }
 
-int mandelbrotIterationRoundedKinda(double real, double imag, int maxIterations) {
+int mandelbrot3rdIterationCheck(double real, double imag, int maxIterations) {
+    const double C0 = real;
+    const double C1 = imag;
+    double Z0 = real;
+    double Z1 = imag;
+    double re2, im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        const double origZ0 = Z0;
+        Z0 = Z0 * (re2 - im2) - 2 * Z0 * im2 + C0;
+        Z1 = origZ0 * (2 * origZ0 * Z1) + Z1 * (re2 - im2) + C1;
+
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
+
+int mandelbrot4thIterationCheck(double real, double imag, int maxIterations) {
+    const double C0 = real;
+    const double C1 = imag;
+    double Z0 = real;
+    double Z1 = imag;
+    double re2, im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
+int mandelbrot8thIterationCheck(double real, double imag, int maxIterations) {
+    const double C0 = real;
+    const double C1 = imag;
+    double Z0 = real;
+    double Z1 = imag;
+    double re2, im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
+int mandelbrot16thIterationCheck(double real, double imag, int maxIterations) {
+    const double C0 = real;
+    const double C1 = imag;
+    double Z0 = real;
+    double Z1 = imag;
+    double re2, im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1;
+        Z0 = re2 - im2;
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
+
+int mandelbrotIterationCheckLateRounding(double real, double imag, int maxIterations) {
     const double C0 = real;
     const double C1 = imag;
     double Z0 = real;
@@ -53,17 +163,57 @@ int mandelbrotIterationRoundedKinda(double real, double imag, int maxIterations)
     } while (iterations < maxIterations && (re2 + im2 <= 4));
     return iterations;
 }
+int burningShipIterationCheck(double real, double imag, int maxIterations) {
+    const double C0 = real;
+    const double C1 = imag;
+    double Z0 = real;
+    double Z1 = imag;
+    double re2;
+    double im2;
+
+    int iterations = 1;
+    do {
+        Z0 = abs(Z0);
+        Z1 = -abs(Z1);
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
 
 
 
-std::vector<sf::Uint8> generateMandelbrotChunk(int maxIterations, unsigned long long int zoom, double xOffset, double yOffset, int minY, int maxY, int height, int minX, int maxX, int width, std::function<sf::Color(int, int)> paletteFunction) {
+
+
+std::vector<formula> formulas = { {mandelbrotIterationCheck, "mandelbrot set"}, {mandelbrotIterationCheckLateRounding, "mandelbrot set but it rounds at iterations 1001-1099"}, {burningShipIterationCheck, "burning ship"}, {mandelbrot4thIterationCheck, "mandelbrot fourth power"}, {mandelbrot8thIterationCheck, "mandelbrot eighth power"}, {mandelbrot16thIterationCheck, "mandelbrot sixteenth power"},  {mandelbrot3rdIterationCheck, "mandelbrot third power"} };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::vector<sf::Uint8> generateMandelbrotChunk(int maxIterations, unsigned long long int zoom, double xCoord, double yCoord, int minY, int maxY, int minX, int maxX, const std::function<sf::Color(int, int)>& paletteFunction, const std::function<int(double, double, int)>& iterationFunction) {
     int iterations;
     std::vector<sf::Uint8> pixels;
     pixels.resize((maxX - minX) * (maxY - minY) * 4);
+    double zoomInverse = 1.0 / zoom; // multiplication by the inverse should be faster than division
     int index = 0;
     for (int y = maxY - 1; y >= minY; y--) {
         for (int x = minX; x < maxX; x++) {
-            iterations = mandelbrotIterationCheck((x + xOffset) / zoom, (y + yOffset) / zoom, maxIterations);
+            iterations = iterationFunction(xCoord + x * zoomInverse, yCoord + y * zoomInverse, maxIterations);
             sf::Color colour = paletteFunction(iterations, maxIterations);
 
             sf::Uint8* pixelPtr = &pixels[index];
@@ -85,15 +235,13 @@ std::vector<sf::Uint8> generateMandelbrotChunk(int maxIterations, unsigned long 
 
 
 
-sf::Image loadMandelbrot(unsigned short threadNum, int maxIterations, unsigned long long int zoom, double xCoord, double yCoord, int width, int height, std::function<sf::Color(int, int)> paletteFunction) {
+sf::Image loadMandelbrot(unsigned short threadNum, int maxIterations, unsigned long long int zoom, double xCoord, double yCoord, int width, int height, std::function<sf::Color(int, int)> paletteFunction, const std::function<int(double, double, int)>& iterationFunction) {
     int minX = -width / 2;
     int maxX = -minX;
     int minY = -height / 2;
     int maxY = -minY;
     int newMinY = minY;
     int newMaxY = maxY;
-    double xOffset = xCoord * zoom;
-    double yOffset = yCoord * zoom;
 
     int chunkSize = height / threadNum;
     std::vector<std::vector<sf::Uint8>> arrays;
@@ -105,7 +253,7 @@ sf::Image loadMandelbrot(unsigned short threadNum, int maxIterations, unsigned l
             int startRow = minY + i * (maxY - minY) / threadNum;
             int endRow = minY + (i + 1) * (maxY - minY) / threadNum;
 
-            std::vector<sf::Uint8> tempArray = generateMandelbrotChunk(maxIterations, zoom, xOffset, yOffset, startRow, endRow, height, minX, maxX, width, paletteFunction);
+            std::vector<sf::Uint8> tempArray = generateMandelbrotChunk(maxIterations, zoom, xCoord, yCoord, startRow, endRow, minX, maxX, paletteFunction, iterationFunction);
 
             std::lock_guard<std::mutex> guard(mutex);
             arrays[threadNum - i - 1] = std::move(tempArray);
@@ -121,7 +269,7 @@ sf::Image loadMandelbrot(unsigned short threadNum, int maxIterations, unsigned l
     }
     // ERROR TERM
     if (chunkSize * threadNum != height) {
-        std::vector<sf::Uint8> tempArray = generateMandelbrotChunk(maxIterations, zoom, xOffset, yOffset, minY + chunkSize * threadNum, maxY, height, minX, maxX, width, paletteFunction);
+        std::vector<sf::Uint8> tempArray = generateMandelbrotChunk(maxIterations, zoom, xCoord, yCoord, minY + chunkSize * threadNum, maxY, minX, maxX, paletteFunction, iterationFunction);
         pixels.insert(pixels.end(), tempArray.begin(), tempArray.end());
     }
     sf::Image image;
@@ -143,14 +291,15 @@ void gameLoop(unsigned short threads, int width, int height, bool fullscreen) {
     unsigned long long int zoom = 450;
     //double xCoord = -1.99977406013629035931268075596025004757;
     //double yCoord = -0.00000000329004032147943505349697867;
-    double xCoord = -1;
-    double yCoord = 0.0012532;
+    double xCoord = 0;
+    double yCoord = 0;
     int paletteNum = 0;
+    int formulaNum = 0;
 
 
 
     sf::Texture texture;
-    texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+    texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
     sf::Sprite sprite(texture);
 
     int winWidth = width;
@@ -175,7 +324,7 @@ void gameLoop(unsigned short threads, int width, int height, bool fullscreen) {
 
                 xCoord = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
                 yCoord = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
-                texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+                texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
                 sprite.setTexture(texture);
             }  if (event.type == sf::Event::Resized) {
                 winWidth = window.getSize().x;
@@ -184,34 +333,34 @@ void gameLoop(unsigned short threads, int width, int height, bool fullscreen) {
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
             zoom *= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::O) && zoom > 2) {
             zoom /= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
             maxIterations *= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations >= 2) {
             maxIterations /= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
             paletteLength *= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && paletteLength >= 2) {
             paletteLength /= 2;
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Equal)) {
             paletteNum++;
             if (paletteNum == palettes.size()) {
                 paletteNum = 0;
             }
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Hyphen)) {
@@ -221,11 +370,35 @@ void gameLoop(unsigned short threads, int width, int height, bool fullscreen) {
             else {
                 paletteNum--;
             }
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
             sprite.setTexture(texture);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
             texture.copyToImage().saveToFile("mandelbrot.png");
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::T)) {
+            zoom += zoom / 15;
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
+            sprite.setTexture(texture);
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+            formulaNum++;
+            if (formulaNum == formulas.size()) {
+                formulaNum = 0;
+            }
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
+            sprite.setTexture(texture);
+            std::cout << formulas[formulaNum].name << '\n';
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+            if (formulaNum == 0) {
+                formulaNum = formulas.size() - 1;
+            }
+            else {
+                formulaNum--;
+            }
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulas[formulaNum].func));
+            sprite.setTexture(texture);
+            std::cout << formulas[formulaNum].name << '\n';
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
         sprite.setTextureRect(sf::IntRect(0, 0, texture.getSize().x, texture.getSize().y));
