@@ -10,7 +10,6 @@
 #include "five_layers.hpp"
 #include "golden.hpp"
 #include "hsv.hpp"
-#include "mandel32.hpp"
 #include "PeacocK4.hpp"
 #include "lch.hpp"
 
@@ -47,4 +46,4 @@ sf::Color paletteAbsolute(int iterations, int maxIterations) {
 
 
 
-std::vector<std::function<sf::Color(int, int)>> palettes = { def1, def2, mandel32, DEFAULT, five_layers, BCGWMRYKkbcgwnry, PeacocK4, e10000, hsv, golden, lch };
+std::vector<std::function<sf::Color(int, int)>> palettes = { def1, def2, paletteWhite1, DEFAULT, five_layers, BCGWMRYKkbcgwnry, PeacocK4, e10000, hsv, golden, lch };
