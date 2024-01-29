@@ -61,7 +61,6 @@ std::vector<sf::Uint8> generateMandelbrotChunkGMP(int maxIterations, mpf_t& zoom
     mpf_init(tempXY);
     int index = 0;
     for (int y = maxY - 1; y >= minY; y--) {
-        std::cout << y - minY << '\n';
         for (int x = minX; x < maxX; x++) {
             mpf_set_si(tempXY, x);
             mpf_add(real, xOffset, tempXY);
@@ -151,23 +150,33 @@ void gameLoopGMP(const unsigned short& threads) {
     int prec;
     std::cout << "enter precision (in bits) for the calculations: ";
     std::cin >> prec;
-    mpf_set_default_prec(prec); // use at least 620
+    mpf_set_default_prec(prec);
+    bool answer;
+    std::cout << "use default resolution (1/0): ";
+    std::cin >> answer;
+    int width = 100;
+    int height = 100;
+    if (!answer) {
+        std::cout << "enter width: ";
+        std::cin >> width;
+        std::cout << "enter height: ";
+        std::cin >> height;
+    }
+
 
 
 
     int maxIterations = 50000;
-    int width = 70;
-    int height = 70;
     int paletteNum = 0;
     mpf_t zoom, xCoord, yCoord;
     mpf_init(zoom);
     mpf_init(xCoord);
     mpf_init(yCoord);
-
+    mpf_set_str(zoom, "1000", 10);
     /*mpf_set_str(zoom, "1000", 10);
     mpf_set_str(xCoord, "-0.04185809511832129648121425363767380159259", 10);
     mpf_set_str(yCoord, "0.9833883421416195186612488600506905099094", 10);*/
-    mpf_set_str(zoom, "16068402370499125297135569731549410090328932840843832825981646206938208233475937610594037289562490315048168835085704464651032827772031467520000000000000000000000000000", 10);
+    //mpf_set_str(zoom, "16068402370499125297135569731549410090328932840843832825981646206938208233475937610594037289562490315048168835085704464651032827772031467520000000000000000000000000000", 10);
     mpf_set_str(xCoord, "-0.17263992420071190839818276390118149888924116243793517214666468601289684626808058290986780909925050862848288936555930266238194627196573720398609693598174510151011765133777032309082605342650546583", 10);
     mpf_set_str(yCoord, "1.0503649263079115536875706751697729765122260848906042038823035989160783016088259124444158505604537988825409508523765645807473164922165294879885406987440228255090273742469742242107866895885588397", 10);
 
@@ -223,7 +232,15 @@ void gameLoopGMP(const unsigned short& threads) {
                 winHeight = window.getSize().y;
             }
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) window.close();
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::I) && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+            mpf_init(temp);
+            mpf_div_ui(temp, zoom, 15);
+            mpf_add(zoom, zoom, temp);
+            mpf_clear(temp);
+            texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            sprite.setTexture(texture);
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
             mpf_mul_ui(zoom, zoom, 2);
             texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
             sprite.setTexture(texture);
@@ -231,12 +248,27 @@ void gameLoopGMP(const unsigned short& threads) {
             mpf_mul_ui(zoom, zoom, 6);
             texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::O) && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+            mpf_init(temp);
+            mpf_div_ui(temp, zoom, 15);
+            mpf_sub(zoom, zoom, temp);
+            mpf_clear(temp);
+            texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            sprite.setTexture(texture);
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
             mpf_div_ui(zoom, zoom, 2);
             texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+            maxIterations += maxIterations / 6;
+            texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            sprite.setTexture(texture);
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
             maxIterations *= 2;
+            texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
+            sprite.setTexture(texture);
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && maxIterations >= 10) {
+            maxIterations -= maxIterations / 6;
             texture.loadFromImage(loadMandelbrotGMP(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum]));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations >= 2) {
