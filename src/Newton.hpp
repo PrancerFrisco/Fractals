@@ -734,16 +734,16 @@ void gameLoopNewtonJulia(unsigned short threads, int width, int height, bool ful
             sprite.setTexture(texture);
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-            maxIterations += maxIterations / 5;
+            maxIterations += maxIterations / 2;
             texture.loadFromImage(loadNewtonJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, formulasNewtonJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations > 5) {
             maxIterations -= maxIterations / 15;
             texture.loadFromImage(loadNewtonJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, formulasNewtonJulia[formulaNum].func));
             sprite.setTexture(texture);
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations > 5) {
-            maxIterations -= maxIterations / 5;
+            maxIterations -= maxIterations / 2;
             texture.loadFromImage(loadNewtonJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, formulasNewtonJulia[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
