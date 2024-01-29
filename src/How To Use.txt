@@ -1,0 +1,27 @@
+escape - quit
+
+leftclick - centre screen on mouse position
+rightclick - change julia set
+i - zoom in
+o - zoom out
+up - increase iterations
+down - decrease iterations
+plus/minus - cycle palettes
+a/d - cycle mandelbrot formulas
+left - decrease palette length
+right - increase palette length
+m - view mandelbrot set relative to julia set
+ctrl + s - save image to file (overwrites old image)
+ctrl + m - manually change settings (also displays stats)
+
+
+
+resizing the window will NOT change that amount of pixels rendered
+you can hold ctrl while pressing i/o/up/down for smaller changes
+
+exclusive to high precision mandelbrot set:
+w - increase precision
+s - decrease precision
+z - larger zoom
+u - upscale
+d - downscale
