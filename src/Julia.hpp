@@ -6,9 +6,15 @@
 #include <vector>
 #include "Palettes.hpp"
 #include "Mandelbrot.hpp"
+#include "ComplexNums.hpp"
 #include "Global.hpp"
 
 
+struct juliaFormula {
+    std::function<int(double, double, double, double, int)> func;
+    std::function<int(double, double, int)> mandelFunc;
+    std::string name;
+};
 
 
 
@@ -30,11 +36,64 @@ int juliaIterationCheck(double realZ, double imagZ, double realC, double imagC, 
     } while (iterations < maxIterations && (re2 + im2 <= 4));
     return iterations;
 }
+int burningShipJuliaIterationCheck(double realZ, double imagZ, double realC, double imagC, int maxIterations) {
+    const double C0 = realC;
+    const double C1 = imagC;
+    double Z0 = realZ;
+    double Z1 = imagZ;
+    double re2;
+    double im2;
+
+    int iterations = 0;
+    do {
+        Z0 = abs(Z0);
+        Z1 = -abs(Z1);
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+}
+int julia3rdIterationCheck(double realZ, double imagZ, double realC, double imagC, int maxIterations) {
+    const double C0 = realC;
+    const double C1 = imagC;
+    double Z0 = realZ;
+    double Z1 = imagZ;
+    double re2;
+    double im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        const double origZ0 = Z0;
+        Z0 = Z0 * (re2 - im2) - 2 * Z0 * im2 + C0;
+        Z1 = origZ0 * (2 * origZ0 * Z1) + Z1 * (re2 - im2) + C1;
+
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    return iterations;
+    
+}
 
 
 
 
-std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long int zoom, double realC, double imagC, double xCoord, double yCoord, int minY, int maxY, int minX, int maxX, std::function<sf::Color(int, int)> paletteFunction) {
+
+
+
+
+std::vector<juliaFormula> formulasJulia = { {juliaIterationCheck, mandelbrotIterationCheck, "julia sets"}, {burningShipJuliaIterationCheck, burningShipIterationCheck, "burning ship"}, {julia3rdIterationCheck, mandelbrot3rdIterationCheck, "julia third power"} };
+
+
+
+
+
+std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long int zoom, double realC, double imagC, double xCoord, double yCoord, int minY, int maxY, int minX, int maxX, std::function<sf::Color(int, int)> paletteFunction, const std::function<int(double, double, double, double, int)>& iterationFunction) {
     int iterations;
     std::vector<sf::Uint8> pixels;
     pixels.resize((maxX - minX) * (maxY - minY) * 4);
@@ -42,7 +101,7 @@ std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long 
     int index = 0;
     for (int y = maxY - 1; y >= minY; y--) {
         for (int x = minX; x < maxX; x++) {
-            iterations = juliaIterationCheck(xCoord + x * zoomInverse, yCoord + y * zoomInverse, realC, imagC, maxIterations);
+            iterations = iterationFunction(xCoord + x * zoomInverse, yCoord + y * zoomInverse, realC, imagC, maxIterations);
             sf::Color colour = paletteFunction(iterations, maxIterations);
 
             sf::Uint8* pixelPtr = &pixels[index];
@@ -57,7 +116,7 @@ std::vector<sf::Uint8> generateJuliaChunk(int maxIterations, unsigned long long 
     return pixels;
 }
 
-sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long long int zoom, double realC, double imagC, double xCoord, double yCoord, int width, int height, std::function<sf::Color(int, int)> paletteFunction) {
+sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long long int zoom, double realC, double imagC, double xCoord, double yCoord, int width, int height, std::function<sf::Color(int, int)> paletteFunction, const std::function<int(double, double, double, double, int)>& iterationFunction) {
     int minX = -width / 2;
     int maxX = -minX;
     int minY = -height / 2;
@@ -75,7 +134,7 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
             int startRow = minY + i * (maxY - minY) / threadNum;
             int endRow = minY + (i + 1) * (maxY - minY) / threadNum;
 
-            std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, startRow, endRow, minX, maxX, paletteFunction);
+            std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, startRow, endRow, minX, maxX, paletteFunction, iterationFunction);
 
             std::lock_guard<std::mutex> guard(mutex);
             arrays[threadNum - i - 1] = std::move(tempArray);
@@ -91,7 +150,7 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
     }
     // ERROR TERM
     if (chunkSize * threadNum != height) {
-        std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, minY + chunkSize * threadNum, maxY, minX, maxX, paletteFunction);
+        std::vector<sf::Uint8> tempArray = generateJuliaChunk(maxIterations, zoom, realC, imagC, xCoord, yCoord, minY + chunkSize * threadNum, maxY, minX, maxX, paletteFunction, iterationFunction);
         pixels.insert(pixels.end(), tempArray.begin(), tempArray.end());
     }
     sf::Image image;
@@ -106,13 +165,58 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
 
 
 
+void manualAdjustJulia(unsigned long long int& zoom, double& xCoord, double& yCoord, double& realC, double& imagC, int& maxIterations) {
+    std::cout << std::fixed << std::setprecision(15) << "\n\n\n(Z: " << xCoord << ", " << yCoord << ")\n";
+    std::cout << std::fixed << std::setprecision(15) << "\n\n\n(C: " << realC << ", " << imagC << ")\n";
+    std::cout << "zoom: " << zoom << '\n';
+    std::cout << "iterations: " << maxIterations << '\n';
 
+    std::string userInput;
+    std::cout << "\n";
+    std::getline(std::cin, userInput);
+
+    std::cout << "FOR Z:\nenter a new value of x: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issX(userInput);
+    if (issX >> xCoord) std::cout << "x coord: " << xCoord << '\n';
+    else std::cout << "unsuccessful conversion to double\n";
+
+    std::cout << "enter a new value of y: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issY(userInput);
+    if (issY >> yCoord) std::cout << "y coord: " << yCoord << '\n';
+    else std::cout << "unsuccessful conversion to double\n";
+
+    std::cout << "FOR C:\nenter a new value of x: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issCX(userInput);
+    if (issCX >> realC) std::cout << "x coord: " << realC << '\n';
+    else std::cout << "unsuccessful conversion to double\n";
+
+    std::cout << "enter a new value of y: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issCY(userInput);
+    if (issCY >> imagC) std::cout << "y coord: " << imagC << '\n';
+    else std::cout << "unsuccessful conversion to double\n";
+
+
+    std::cout << "enter a new value for zoom: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issZoom(userInput);
+    if (issZoom >> zoom) std::cout << "zoom: " << zoom << '\n';
+    else std::cout << "unsuccessful conversion to integer\n";
+
+    std::cout << "enter a new value for iterations: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issIters(userInput);
+    if (issIters >> maxIterations) std::cout << "iterations: " << maxIterations << '\n';
+}
 
 void gameLoopJulia(unsigned short threads, int width, int height, bool fullscreen) {
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
 
-    int maxIterations = 100;
+    int maxIterations = 10;
     unsigned long long int zoom = 450;
     double xCoord = 0;
     double yCoord = 0;
@@ -123,12 +227,13 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
 
 
     int paletteNum = 0;
+    int formulaNum = 0;
 
 
 
 
     sf::Texture texture;
-    texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+    texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
     sf::Sprite sprite(texture);
 
     int winWidth = width;
@@ -153,51 +258,78 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
 
                     xCoord = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
                     yCoord = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
-                    texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+                    texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
                     sprite.setTexture(texture);
                 }
             } if (event.type == sf::Event::Resized) {
                 winWidth = window.getSize().x;
                 winHeight = window.getSize().y;
             }
-        } if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) window.close();
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
             mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
             realC = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
             imagC = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
-            zoom += zoom / 3;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            texture.copyToImage().saveToFile("julia.png");
+        }
+
+
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
+            zoom += zoom / 15;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::O) && zoom > 4) {
-            zoom -= zoom / 3;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
+            zoom *= 2;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-            maxIterations += maxIterations / 5;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
+            zoom -= zoom / 15;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations > 5) {
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
+            zoom -= zoom / 2;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+            maxIterations += maxIterations / 15;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+            maxIterations +=  maxIterations / 5;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+            maxIterations -= maxIterations / 15;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && maxIterations > 5) {
             maxIterations -= maxIterations / 5;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
             paletteLength *= 2;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && paletteLength >= 2) {
-            paletteLength /= 2;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+            paletteLength -= paletteLength / 2;
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Equal)) {
             paletteNum++;
             if (paletteNum == palettes.size()) {
                 paletteNum = 0;
             }
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::Hyphen)) {
@@ -207,19 +339,40 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
             else {
                 paletteNum--;
             }
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
-            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], mandelbrotIterationCheck));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
+            manualAdjustJulia(zoom, xCoord, yCoord, realC, imagC, maxIterations);
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
-        }  if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            texture.copyToImage().saveToFile("julia.png");
-        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::T)) {
-            zoom += zoom / 15;
-            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum]));
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
+            texture.loadFromImage(loadMandelbrot(threads, maxIterations, zoom, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].mandelFunc));
             sprite.setTexture(texture);
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+            formulaNum++;
+            if (formulaNum == formulasJulia.size()) {
+                formulaNum = 0;
+            }
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+            std::cout << formulasJulia[formulaNum].name << '\n';
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+            if (formulaNum == 0) {
+                formulaNum = formulasJulia.size() - 1;
+            }
+            else {
+                formulaNum--;
+            }
+            texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+            sprite.setTexture(texture);
+            std::cout << formulasJulia[formulaNum].name << '\n';
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+        
+        
+        
 
         // Clear the window
         window.clear();
