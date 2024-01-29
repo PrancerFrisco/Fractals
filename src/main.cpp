@@ -2,15 +2,15 @@
 #include <SFML\Graphics.hpp>
 #include "Mandelbrot.hpp"
 #include "MandelbrotGMP.hpp"
+#include "Newton.hpp"
 #include "Julia.hpp"
+#include "Misc.hpp"
 
 
 
 
 
-std::string controls() {
-    return " rightclick - change julia set\n leftclick - centre screen on mouse position (you can press any mouse button to do this for the mandelbrot set)\n i - zoom in\n o - zoom out\n s - save image (overwrites old image)\n up - increase iterations\n down - decrease iterations\n left - decrease palette length (only compatible with one palette)\n right - increase palette length (only compatible with one palette)\n plus/minus - change palette\n\nresizing the window will NOT change that amount of pixels rendered\n\n\n\n";
-}
+
 
 
 
@@ -19,7 +19,7 @@ std::string controls() {
 int main() {
 
 
-    std::cout << controls();
+    std::cout << "refer to How-To-Use.txt for controls\n\n\n";
 
     int threads;
 
@@ -41,14 +41,28 @@ int main() {
         std::cout << "enter height: ";
         std::cin >> height;
     }
-    gameLoop(threads, width, height, fullscreen);
-    gameLoopJulia(threads, width, height, fullscreen);
-    gameLoopGMP(threads);
-
-    HSV thing(100, 50, 230);
-    sf::Color t = thing.toRGB();
-    std::cout << (int)t.r << ' ' << (int)t.g << ' ' << (int)t.b;
-
+    std::cout << "\n1 - Mandelbrot Set\n2 - Julia Sets\n3 - Mandelbrot Set (unlimited precision, but extemely slow)\n4 - Newton Fractal\n5 - Newton Fractal (Julia)\n";
+    int choice;
+    std::cin >> choice;
+    switch (choice) {
+    case 1:
+        gameLoop(threads, width, height, fullscreen);
+        break;
+    case 2:
+        gameLoopJulia(threads, width, height, fullscreen);
+        break;
+    case 3:
+        gameLoopGMP(threads);
+        break;
+    case 4:
+        gameLoopNewton(threads, width, height, fullscreen);
+        break;
+    case 5:
+        gameLoopNewtonJulia(threads, width, height, fullscreen);
+        break;
+    default:
+        break;
+    }
 
     return 0;
 }
