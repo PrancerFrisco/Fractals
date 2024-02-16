@@ -13,10 +13,12 @@
 struct juliaFormula {
     std::function<int(double, double, double, double, int)> func;
     std::function<int(double, double, int)> mandelFunc;
+    std::function<void(double, double, double, double, int, std::vector<numPair>&)> orbitFunc;
     std::string name;
 };
 
 
+void blankOrbitJuliaFunc(double real, double imag, double realC, double imagC, int maxIterations, std::vector<numPair>& pointsVec) {}
 
 int juliaIterationCheck(double realZ, double imagZ, double realC, double imagC, int maxIterations) {
     const double C0 = realC;
@@ -36,6 +38,28 @@ int juliaIterationCheck(double realZ, double imagZ, double realC, double imagC, 
     } while (iterations < maxIterations && (re2 + im2 <= 4));
     return iterations;
 }
+void juliaOrbit(double realZ, double imagZ, double realC, double imagC, int maxIterations, std::vector<numPair>& pointsVec) {
+    pointsVec.clear();
+    pointsVec.resize(maxIterations);
+    const double C0 = realC;
+    const double C1 = imagC;
+    double Z0 = realZ;
+    double Z1 = imagZ;
+    double re2;
+    double im2;
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+        pointsVec[iterations] = { Z0, Z1 };
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    pointsVec.resize(iterations);
+}
+
 int burningShipJuliaIterationCheck(double realZ, double imagZ, double realC, double imagC, int maxIterations) {
     const double C0 = realC;
     const double C1 = imagC;
@@ -56,6 +80,29 @@ int burningShipJuliaIterationCheck(double realZ, double imagZ, double realC, dou
     } while (iterations < maxIterations && (re2 + im2 <= 4));
     return iterations;
 }
+void burningShipJuliaOrbit(double realZ, double imagZ, double realC, double imagC, int maxIterations, std::vector<numPair>& pointsVec) {
+    pointsVec.clear();
+    pointsVec.resize(maxIterations);
+    const double C0 = realC;
+    const double C1 = imagC;
+    double Z0 = realZ;
+    double Z1 = imagZ;
+    double re2;
+    double im2;
+
+    int iterations = 0;
+    do {
+        Z0 = abs(Z0);
+        Z1 = -abs(Z1);
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        Z1 = 2 * Z0 * Z1 + C1;
+        Z0 = re2 - im2 + C0;
+        pointsVec[iterations] = { Z0, Z1 };
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    pointsVec.resize(iterations);
+}
 int julia3rdIterationCheck(double realZ, double imagZ, double realC, double imagC, int maxIterations) {
     const double C0 = realC;
     const double C1 = imagC;
@@ -70,14 +117,37 @@ int julia3rdIterationCheck(double realZ, double imagZ, double realC, double imag
     do {
         re2 = Z0 * Z0;
         im2 = Z1 * Z1;
-        const double origZ0 = Z0;
+        double origZ0 = Z0;
         Z0 = Z0 * (re2 - im2) - 2 * Z0 * im2 + C0;
         Z1 = origZ0 * (2 * origZ0 * Z1) + Z1 * (re2 - im2) + C1;
 
         iterations++;
     } while (iterations < maxIterations && (re2 + im2 <= 4));
     return iterations;
-    
+}
+void julia3rdOrbit(double realZ, double imagZ, double realC, double imagC, int maxIterations, std::vector<numPair>& pointsVec) {
+    pointsVec.clear();
+    pointsVec.resize(maxIterations);
+    const double C0 = realC;
+    const double C1 = imagC;
+    double Z0 = realZ;
+    double Z1 = imagZ;
+    double re2;
+    double im2;
+
+
+
+    int iterations = 0;
+    do {
+        re2 = Z0 * Z0;
+        im2 = Z1 * Z1;
+        double origZ0 = Z0;
+        Z0 = Z0 * (re2 - im2) - 2 * Z0 * im2 + C0;
+        Z1 = origZ0 * (2 * origZ0 * Z1) + Z1 * (re2 - im2) + C1;
+        pointsVec[iterations] = { Z0, Z1 };
+        iterations++;
+    } while (iterations < maxIterations && (re2 + im2 <= 4));
+    pointsVec.resize(iterations);
 }
 
 
@@ -87,7 +157,7 @@ int julia3rdIterationCheck(double realZ, double imagZ, double realC, double imag
 
 
 
-std::vector<juliaFormula> formulasJulia = { {juliaIterationCheck, mandelbrotIterationCheck, "julia sets"}, {burningShipJuliaIterationCheck, burningShipIterationCheck, "burning ship"}, {julia3rdIterationCheck, mandelbrot3rdIterationCheck, "julia third power"} };
+std::vector<juliaFormula> formulasJulia = { {juliaIterationCheck, mandelbrotIterationCheck, juliaOrbit, "julia sets"}, {burningShipJuliaIterationCheck, burningShipIterationCheck, burningShipJuliaOrbit, "burning ship"}, {julia3rdIterationCheck, mandelbrot3rdIterationCheck, julia3rdOrbit, "julia third power"} };
 
 
 
@@ -158,7 +228,66 @@ sf::Image loadJulia(unsigned short threadNum, int maxIterations, unsigned long l
     return image;
 }
 
+//create animation in 4k and upload to youtube
 
+void animationJulia(unsigned short threads, int width, int height, bool fullscreen) {
+    double a = 0;
+    if (width % 2 == 1) width++;
+    if (height % 2 == 1) height++;
+
+
+
+    int maxIterations = 300;
+    unsigned long long int zoom = std::min(width, height) / 4;
+    double xCoord = 0;
+    double yCoord = 0;
+    int paletteNum = 1;
+    int frameNum = 0;
+    sf::Texture texture;
+    sf::Sprite sprite(texture);
+    int winWidth = width;
+    int winHeight = height;
+    int scaleFactor = 1;
+    sf::RenderWindow window;
+    if (fullscreen)
+        window.create(sf::VideoMode(winWidth, winHeight), "SFML Julia Set", sf::Style::Fullscreen);
+    else {
+        window.create(sf::VideoMode(winWidth, winHeight), "SFML Julia Set");
+    }
+    while (window.isOpen() && a < 3.1415*2) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            } if (event.type == sf::Event::Resized) {
+                winWidth = window.getSize().x;
+                winHeight = window.getSize().y;
+            }
+        }
+
+        texture.loadFromImage(loadJulia(threads, maxIterations, zoom, 0.7885 * c_exp_imag(a).real, 0.7885 * c_exp_imag(a).imag, xCoord, yCoord, width, height, palettes[paletteNum], juliaIterationCheck));
+        sprite.setTexture(texture);
+        sprite.setTextureRect(sf::IntRect(0, 0, texture.getSize().x, texture.getSize().y));
+
+
+        // Clear the window
+        window.clear();
+        sprite.setScale(scaleFactor, scaleFactor);
+
+        // Draw the sprite
+        window.draw(sprite);
+
+        // Display the window
+        window.display();
+        std::string fileName = std::to_string(frameNum) + ".png";
+        // make fileNum length 10 chars
+        fileName = "animation/" + std::string(10 - fileName.length(), '0') + fileName;
+        //std::cout << fileName << '\n';
+        texture.copyToImage().saveToFile(fileName);
+        a += 0.0009765625;
+        frameNum++;
+    }
+}
 
 
 
@@ -216,11 +345,13 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
     if (width % 2 == 1) width++;
     if (height % 2 == 1) height++;
 
-    int maxIterations = 10;
+    int maxIterations = 50;
+    int maxIterationsLine = 50;
     unsigned long long int zoom = 450;
     double xCoord = 0;
     double yCoord = 0;
-
+    double xCoordLine = 0;
+    double yCoordLine = 0;
 
     double realC = 0;
     double imagC = 1;
@@ -239,6 +370,7 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
     int winWidth = width;
     int winHeight = height;
     sf::RenderWindow window;
+    std::vector<numPair> pointsVec;
     if (fullscreen)
         window.create(sf::VideoMode(winWidth, winHeight), "SFML Julia Set", sf::Style::Fullscreen);
     else {
@@ -249,25 +381,35 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-            if (event.type == sf::Event::MouseButtonPressed) {
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
-                    mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
-                    mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
+                mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
+                mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
 
-                    xCoord = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
-                    yCoord = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
-                    texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
-                    sprite.setTexture(texture);
-                }
+                xCoord = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
+                yCoord = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
+                texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
+                sprite.setTexture(texture);
+                pointsVec.clear();
             } if (event.type == sf::Event::Resized) {
                 winWidth = window.getSize().x;
                 winHeight = window.getSize().y;
             }
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) window.close();
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+            mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
+            mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
+
+            xCoordLine = (mousePos.x - width / 2 + xCoord * zoom) / zoom;
+            yCoordLine = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
+
+            //mandelbrotOrbit(xCoord, -yCoord, maxIterations, pointsVec);
+            formulasJulia[formulaNum].orbitFunc(xCoordLine, yCoordLine, realC, imagC, maxIterationsLine, pointsVec);
+        } else if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
             mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
@@ -275,6 +417,7 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
             imagC = ((height - 1 - mousePos.y) - height / 2 + yCoord * zoom) / zoom;
             texture.loadFromImage(loadJulia(threads, maxIterations, zoom, realC, imagC, xCoord, yCoord, width, height, palettes[paletteNum], formulasJulia[formulaNum].func));
             sprite.setTexture(texture);
+            pointsVec.clear();
         } if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
             texture.copyToImage().saveToFile("julia.png");
         }
@@ -369,6 +512,14 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
             sprite.setTexture(texture);
             std::cout << formulasJulia[formulaNum].name << '\n';
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+            maxIterationsLine++;
+            formulasJulia[formulaNum].orbitFunc(xCoordLine, yCoordLine, realC, imagC, maxIterationsLine, pointsVec);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        } if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) && maxIterationsLine > 1) {
+            maxIterationsLine--;
+            formulasJulia[formulaNum].orbitFunc(xCoordLine, yCoordLine, realC, imagC, maxIterationsLine, pointsVec);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         
         
@@ -379,6 +530,8 @@ void gameLoopJulia(unsigned short threads, int width, int height, bool fullscree
 
         // Draw the sprite
         window.draw(sprite);
+
+        drawPoints(zoom, xCoord, yCoord, width, height, pointsVec, window);
 
         // Display the window
         window.display();
