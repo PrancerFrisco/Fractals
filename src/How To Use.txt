@@ -4,6 +4,8 @@ leftclick - centre screen on mouse position
 rightclick - change julia set
 i - zoom in
 o - zoom out
+w - increase orbit iterations
+s decrease orbit iterations
 up - increase iterations
 down - decrease iterations
 plus/minus - cycle palettes
@@ -15,7 +17,6 @@ ctrl + s - save image to file (overwrites old image)
 ctrl + m - manually change settings (also displays stats)
 
 
-
 resizing the window will NOT change that amount of pixels rendered
 you can hold ctrl while pressing i/o/up/down for smaller changes
 
@@ -25,3 +26,11 @@ s - decrease precision
 z - larger zoom
 u - upscale
 d - downscale
+
+
+exclusive to mandelbrot set:
+rightclick - view orbit
+
+
+exclusive to julia set:
+ctrl + rightclick - view orbit
