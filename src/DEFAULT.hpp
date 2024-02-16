@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> DEFAULTC = { {84, 0, 0},
     { 168, 0, 0 },
