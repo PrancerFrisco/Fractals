@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> e10000C = { {17, 17, 17},
 {72, 96, 96},
