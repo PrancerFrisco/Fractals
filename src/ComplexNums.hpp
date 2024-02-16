@@ -29,14 +29,16 @@ public:
 		return { real + other.real, imag + other.imag };
 	}
 	Complex& operator+=(const Complex& other) {
-		*this = { real + other.real, imag + other.imag };
+		real += other.real;
+		imag += other.imag;
 		return *this;
 	}
 	Complex operator-(const Complex& other) const {
 		return { real - other.real, imag - other.imag };
 	}
 	Complex& operator-=(const Complex& other) {
-		*this = { real - other.real, imag - other.imag };
+		real -= other.real;
+		imag -= other.imag;
 		return *this;
 	}
 	Complex operator*(const Complex& other) const {
@@ -220,3 +222,4 @@ Complex c_root(const Complex& num, const Complex& root) {
 	Complex toRaise = c_log(num) / root;
 	return c_exp(toRaise);
 }
+
