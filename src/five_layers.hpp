@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> five_layersC = { {49, 167, 167},
     { 173, 227, 227 },
