@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> PeacocK4C = { {0, 0, 0},
 {3, 4, 4},
