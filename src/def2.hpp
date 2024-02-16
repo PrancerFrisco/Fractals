@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> def2C = {
                         {25, 7, 26},
