@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML\Graphics.hpp>
-#include "Palettes.hpp"
 
 std::vector<sf::Color> BCGWMRYKkbcgwnryC = { {0, 11, 11},
     { 62, 91, 91 },
