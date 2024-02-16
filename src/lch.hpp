@@ -1,7 +1,6 @@
 #pragma once
 #include <SFML\Graphics.hpp>
 #include "Global.hpp"
-#include "Palettes.hpp"
 
 const struct lab {
     float l;
