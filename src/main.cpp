@@ -4,7 +4,6 @@
 #include "MandelbrotGMP.hpp"
 #include "Newton.hpp"
 #include "Julia.hpp"
-#include "Misc.hpp"
 
 
 
@@ -41,6 +40,7 @@ int main() {
         std::cout << "enter height: ";
         std::cin >> height;
     }
+
     std::cout << "\n1 - Mandelbrot Set\n2 - Julia Sets\n3 - Mandelbrot Set (unlimited precision, but extemely slow)\n4 - Newton Fractal\n5 - Newton Fractal (Julia)\n";
     int choice;
     std::cin >> choice;
@@ -63,6 +63,5 @@ int main() {
     default:
         break;
     }
-
     return 0;
 }
