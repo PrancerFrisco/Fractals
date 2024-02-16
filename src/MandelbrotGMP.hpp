@@ -51,6 +51,7 @@ int mandelbrotIterationCheckGMP(mpf_t& real, mpf_t& imag, int maxIterations) {
 }
 
 
+
 std::vector<sf::Uint8> generateMandelbrotChunkGMP(int maxIterations, mpf_t& zoom, mpf_t& xOffset, mpf_t& yOffset, int minY, int maxY, int height, int minX, int maxX, int width, std::function<sf::Color(int, int)> paletteFunction) {
     int iterations;
     std::vector<sf::Uint8> pixels;
@@ -146,6 +147,48 @@ sf::Image loadMandelbrotGMP(unsigned short threadNum, int maxIterations, mpf_t& 
     return image;
 }
 
+
+
+void manualAdjustMandelGMP(mpz_t& zoom, mpz_t& xCoord, mpz_t& yCoord, int& maxIterations) {
+    gmp_printf("coordinates : %.*Ff, %.*Ff \n\n\n\n", 500, xCoord, 500, yCoord);
+    gmp_printf("zoom: %Ff\n", zoom);
+    std::cout << "iterations: " << maxIterations << '\n';
+    printf("iterations: %d\n", maxIterations);
+
+    std::string userInput;
+    std::cout << "\n";
+    std::getline(std::cin, userInput);
+
+    std::cout << "enter a new value of x: ";
+    std::getline(std::cin, userInput);
+    mpz_set_str(xCoord, userInput.c_str(), 10);
+    gmp_printf("x coord: %.*Ff\n", 500, xCoord);
+
+    std::cout << "enter a new value of y: ";
+    std::getline(std::cin, userInput);
+    mpz_set_str(yCoord, userInput.c_str(), 10);
+    gmp_printf("y coord: %.*Ff\n", 500, yCoord);
+
+
+    std::cout << "enter a new value for zoom: ";
+    std::getline(std::cin, userInput);
+    mpz_set_str(zoom, userInput.c_str(), 10);
+    gmp_printf("zoom: %.*Ff\n", zoom);
+
+    std::cout << "enter a new value for iterations: ";
+    std::getline(std::cin, userInput);
+    std::istringstream issIters(userInput);
+    if (issIters >> maxIterations) printf("iterations: %d\n", maxIterations);
+}
+
+
+
+
+
+
+
+
+
 void gameLoopGMP(const unsigned short& threads) {
     int prec;
     std::cout << "enter precision (in bits) for the calculations: ";
@@ -164,7 +207,7 @@ void gameLoopGMP(const unsigned short& threads) {
     }
 
 
-
+    paletteLength = 10;
 
     int maxIterations = 50000;
     int paletteNum = 0;
@@ -176,10 +219,10 @@ void gameLoopGMP(const unsigned short& threads) {
     /*mpf_set_str(zoom, "1000", 10);
     mpf_set_str(xCoord, "-0.04185809511832129648121425363767380159259", 10);
     mpf_set_str(yCoord, "0.9833883421416195186612488600506905099094", 10);*/
-    //mpf_set_str(zoom, "16068402370499125297135569731549410090328932840843832825981646206938208233475937610594037289562490315048168835085704464651032827772031467520000000000000000000000000000", 10);
-    mpf_set_str(xCoord, "-0.17263992420071190839818276390118149888924116243793517214666468601289684626808058290986780909925050862848288936555930266238194627196573720398609693598174510151011765133777032309082605342650546583", 10);
-    mpf_set_str(yCoord, "1.0503649263079115536875706751697729765122260848906042038823035989160783016088259124444158505604537988825409508523765645807473164922165294879885406987440228255090273742469742242107866895885588397", 10);
-
+    //mpf_set_str(zoom, "7555121520734093065255179271209531843903208054538697400108902813868330342441959932304295717190508354569072644421815841350040207348462280000077844971520000000000000000000000000000", 10);
+    mpf_set_str(xCoord, "-0.17263992420071190839818276390118149888924116243793517214666468601289684626808058290986780909925050862848288936555930266238194627196573720398609693598174510151011765125761313709202862235250293208", 10);
+    mpf_set_str(yCoord, "1.0503649263079115536875706751697729765122260848906042038823035989160783016088259124444158505604537988825409508523765645807473164922165294879885406987440228255090273741752602965889639630296075951", 10);
+    //maxIterations = 80000;
 
 
     mpf_t temp;
@@ -204,8 +247,7 @@ void gameLoopGMP(const unsigned short& threads) {
                 window.close();
             if (event.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                std::cout << width << ' ' << scaleFactor << ' ' << winWidth << '\n';
-                gmp_printf("%Ff\n", zoom);
+                gmp_printf("zoom: %Ff\n", zoom);
                 mousePos.x = normaliseINT(mousePos.x, 0, winWidth, 0, width);
                 mousePos.y = normaliseINT(mousePos.y, 0, winHeight, 0, height);
                 mpf_init(temp);
